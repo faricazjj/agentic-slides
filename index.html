@@ -155,7 +155,159 @@
       </div>
     </section>
 
-    <!-- Slide 5: Validation & Test Results (Tabular Baselines - All modalities) -->
+    <!-- Slide 5: ADAgent Tabular Workflow -->
+    <section class="slide">
+      <h2>ADAgent in Action</h2>
+      <h1>LangGraph & LangChain Coordinator</h1>
+      <div class="accent-bar"></div>
+      <div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1.4fr;gap:2rem;height:100%">
+        
+        <!-- Left: Explanations -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+          <p class="muted">How the LLM Coordinator orchestrates the tabular SOTAs based on the execution logs:</p>
+          
+          <div class="card" style="border-left:4px solid var(--accent);padding:1rem">
+            <h3 style="margin:0 0 0.4rem 0;color:var(--accent);font-size:1.1rem">LangGraph (State Machine)</h3>
+            <p class="muted" style="font-size:0.9rem;margin:0;line-height:1.5">Manages the cyclic control flow. It defines nodes (<code>process</code>, <code>execute</code>) and conditional edges (<code>has_tool_calls</code>) to loop between reasoning and tool execution until a final answer is reached.</p>
+          </div>
+          
+          <div class="card" style="border-left:4px solid #10b981;padding:1rem">
+            <h3 style="margin:0 0 0.4rem 0;color:#10b981;font-size:1.1rem">LangChain (Primitives)</h3>
+            <p class="muted" style="font-size:0.9rem;margin:0;line-height:1.5">Provides the core components: the <code>ChatOpenAI</code> wrapper (GPT-4.1-mini), prompt templates, message history, and the standard interface for binding our tabular tools (e.g., <code>pet_diagnosis</code>).</p>
+          </div>
+
+          <div class="card" style="background:#f8fafc;padding:0.75rem 1rem">
+             <h3 style="margin:0 0 0.5rem 0;font-size:0.95rem;color:#334155">Execution Trace</h3>
+             <pre style="font-size:0.75rem;color:#475569;margin:0;white-space:pre-wrap;line-height:1.5;font-family:monospace">
+[LangGraph] Enter `process` node
+[LangChain] `ChatOpenAI` generates tool call
+[LangGraph] `has_tool_calls` = True
+[LangGraph] Enter `execute` node
+[LangChain] Run `pet_diagnosis` tool
+[LangGraph] Loop back to `process` node
+[LangChain] `ChatOpenAI` synthesizes final diagnosis
+[LangGraph] `has_tool_calls` = False -> Exit</pre>
+          </div>
+        </div>
+
+        <!-- Right: The Diagram -->
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:1.5rem;display:flex;flex-direction:column;align-items:center;position:relative">
+          
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;width:100%;font-size:0.9rem;position:relative">
+            <!-- Input -->
+            <div style="background:white;border:1px solid #cbd5e1;padding:0.6rem 1.2rem;border-radius:8px;font-weight:600;box-shadow:0 2px 4px rgba(0,0,0,0.02)">User Prompt + Patient CSV</div>
+            <div style="color:var(--muted)">↓</div>
+            
+            <!-- Loop container -->
+            <div style="border:2px dashed #cbd5e1;border-radius:16px;padding:1.5rem;width:95%;display:flex;flex-direction:column;align-items:center;background:white;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.03)">
+              <div style="position:absolute;top:-10px;left:1.5rem;background:#f8fafc;padding:0 0.5rem;font-weight:700;color:var(--muted);font-size:0.8rem;border:1px solid #cbd5e1;border-radius:4px">LangGraph Cyclic Workflow</div>
+              
+              <!-- Process -->
+              <div style="background:#eef2ff;border:2px solid var(--accent);padding:0.75rem;border-radius:8px;width:90%;text-align:center;z-index:2">
+                <div style="font-weight:700;color:#0369a1;margin-bottom:0.25rem">Node: <code>process</code></div>
+                <div style="font-size:0.8rem;color:#475569">LangChain <code>ChatOpenAI</code> analyzes state & generates response or tool calls</div>
+              </div>
+
+              <div style="margin:0.75rem 0;color:var(--muted)">↓</div>
+
+              <!-- Condition -->
+              <div style="background:#fffbeb;border:2px solid #fbbf24;padding:0.5rem;border-radius:8px;text-align:center;width:60%;z-index:2">
+                <div style="font-weight:600;color:#92400e;font-size:0.85rem">Edge: <code>has_tool_calls?</code></div>
+              </div>
+
+              <div style="display:flex;width:100%;margin-top:1.25rem;gap:1rem">
+                <!-- YES -->
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+                  <div style="font-weight:700;color:#d97706;font-size:0.85rem;margin-bottom:0.4rem">Yes</div>
+                  <div style="background:#f0fdf4;border:2px solid #10b981;padding:0.75rem;border-radius:8px;text-align:center;width:100%;z-index:2">
+                    <div style="font-weight:700;color:#166534;margin-bottom:0.25rem">Node: <code>execute</code></div>
+                    <div style="font-size:0.8rem;color:#475569">Run Tabular SOTAs (XGBoost, TabNet, NODE)</div>
+                  </div>
+                  <!-- Loop back text -->
+                  <div style="font-size:0.75rem;color:var(--accent);margin-top:0.75rem;font-weight:700;background:#eef2ff;padding:0.25rem 0.5rem;border-radius:4px">↺ Return results to <code>process</code></div>
+                </div>
+                <!-- NO -->
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+                  <div style="font-weight:700;color:#d97706;font-size:0.85rem;margin-bottom:0.4rem">No</div>
+                  <div style="background:#f8fafc;border:2px solid #94a3b8;padding:0.75rem;border-radius:8px;text-align:center;width:100%;z-index:2">
+                    <div style="font-weight:700;color:#334155;margin-bottom:0.25rem">Exit Graph</div>
+                    <div style="font-size:0.8rem;color:#475569">Return final synthesized diagnosis</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="color:var(--muted)">↓</div>
+            <div style="background:var(--card);border:2px solid var(--accent);padding:0.6rem 1.2rem;border-radius:8px;font-weight:700;color:#0f172a;box-shadow:0 2px 4px rgba(14,165,233,0.1)">
+              Final Output: "MCI"
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: Prompts & Workflow Details -->
+    <section class="slide">
+      <h2>Under the Hood</h2>
+      <h1>Prompts & Tool Execution Workflow</h1>
+      <div class="accent-bar"></div>
+      <div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1.2fr;gap:2rem;height:100%">
+        
+        <!-- Left: Prompting Strategy -->
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <p class="muted">The LLM is guided by a strict system prompt that defines its persona, rules of engagement, and the expected output format.</p>
+          
+          <div style="background:#0f172a;color:#e2e8f0;padding:1.25rem;border-radius:12px;font-family:monospace;font-size:0.85rem;line-height:1.6;box-shadow:inset 0 2px 4px rgba(0,0,0,0.5);flex:1;overflow-y:auto">
+            <div style="color:#38bdf8;font-weight:700;margin-bottom:0.5rem">System Prompt:</div>
+            <div style="color:#94a3b8">"You are an expert medical AI assistant for diagnosing Alzheimer's Disease.</div>
+            <div style="color:#94a3b8;margin-top:0.5rem">Make multiple tool calls in parallel or sequence as needed for comprehensive answers. Critically think about and criticize the tool outputs.</div>
+            <div style="color:#94a3b8;margin-top:0.5rem">AD processes can be divided into three stages: CN (Cognitively Normal), MCI (Mild Cognitive Impairment), AD (Alzheimer's Disease).</div>
+            <div style="color:#fde047;margin-top:0.5rem">Your final decision must select one category from the above three stages."</div>
+            
+            <div style="color:#38bdf8;font-weight:700;margin-top:1rem;margin-bottom:0.5rem">Human Input:</div>
+            <div style="color:#cbd5e1">"pet_path: temp/pet_002_S_0295.csv<br/>Please diagnose this patient based on the provided PET CSV data. Conclude with one of [CN,MCI,AD]."</div>
+          </div>
+        </div>
+
+        <!-- Right: Tool Execution & Synthesis -->
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <p class="muted">How the LLM interprets the tabular tool outputs to form a final diagnosis:</p>
+          
+          <!-- Tool Output -->
+          <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:1rem;position:relative">
+            <div style="position:absolute;top:-10px;left:1rem;background:var(--card);padding:0 0.5rem;font-weight:700;color:#0369a1;font-size:0.8rem;border:1px solid #cbd5e1;border-radius:4px">1. Tool Output (pet_diagnosis)</div>
+            <pre style="margin:0;font-size:0.8rem;color:#475569;white-space:pre-wrap;font-family:monospace;margin-top:0.5rem">
+{
+  'XGBoost': [0.29, 0.47, 0.24], // [CN, MCI, AD]
+  'TabNet':  [0.37, 0.28, 0.35],
+  'NODE':    [0.48, 0.40, 0.12]
+}</pre>
+          </div>
+
+          <div style="color:var(--muted);text-align:center;font-size:1.2rem;margin:-0.5rem 0">↓</div>
+
+          <!-- LLM Synthesis -->
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:1rem;position:relative;flex:1">
+            <div style="position:absolute;top:-10px;left:1rem;background:var(--card);padding:0 0.5rem;font-weight:700;color:#166534;font-size:0.8rem;border:1px solid #86efac;border-radius:4px">2. LLM Synthesis & Reasoning</div>
+            <div style="font-size:0.85rem;color:#166534;line-height:1.5;margin-top:0.5rem">
+              "The PET data diagnosis results are from three models:
+              <ul style="margin:0.25rem 0 0.5rem 1.5rem;padding:0">
+                <li>XGBoost model probabilities: CN 29.17%, MCI 47.27%, AD 23.56%</li>
+                <li>TabNet model probabilities: CN 36.77%, MCI 27.92%, AD 35.31%</li>
+                <li>NODE model probabilities: CN 48.08%, MCI 40.38%, AD 11.54%</li>
+              </ul>
+              The XGBoost model suggests MCI is most likely, TabNet suggests AD slightly more than CN or MCI, and NODE suggests CN as most likely.<br/><br/>
+              Considering the mixed results but with a tendency towards MCI and CN stages, the overall conclusion leans towards MCI as the most probable stage.<br/><br/>
+              <strong>Final diagnosis: MCI (Mild Cognitive Impairment).</strong>"
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: Validation & Test Results (Tabular Baselines - All modalities) -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (All modalities - PET, MRI, Demographics)</h1>
@@ -261,7 +413,6 @@
               <tr><td>TabPFN</td><td>—</td><td>—</td></tr>
               <tr><td>NODE</td><td>0.6013±0.0381</td><td>0.5878±0.0424</td></tr>
               <tr><td>TabM</td><td>—</td><td>—</td></tr>
-              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent</td><td>—</td><td>—</td></tr>
             </tbody>
           </table>
         </div>
@@ -278,14 +429,60 @@
               <tr><td>TabPFN</td><td>—</td><td>—</td></tr>
               <tr><td>NODE</td><td>0.5948±0.0332</td><td>0.5889±0.0315</td></tr>
               <tr><td>TabM</td><td>—</td><td>—</td></tr>
-              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent</td><td>—</td><td>—</td></tr>
+              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent (gpt-4-1-mini)</td><td>0.4991±0.0167</td><td>0.4122±0.0174</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- Slide 8: Run other baselines -->
+    <!-- Slide 10: Error Analysis -->
+    <section class="slide">
+      <h2>Error Analysis</h2>
+      <h1>Why did GPT-4-1-mini underperform?</h1>
+      <div class="accent-bar" style="background:#ef4444 !important"></div>
+      <div style="margin-top:1rem;display:flex;flex-direction:column;gap:1.5rem;height:100%">
+        <p class="muted" style="font-size:1.05rem"><strong>Core Issue:</strong> LLMs (especially smaller models like <code>gpt-4-1-mini</code>) struggle with raw numerical reasoning. They frequently misinterpret arrays of probabilities, leading to flawed aggregation.</p>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start">
+          
+          <!-- Left: The Data -->
+          <div class="card" style="border-top:4px solid var(--accent)">
+            <h3 style="margin:0 0 0.5rem 0;color:#0f172a">Tool Output (Probabilities)</h3>
+            <p class="muted" style="font-size:0.85rem;margin-bottom:1rem">Patient: <code>pet_002_S_0295.csv</code> | Classes: <code>[CN, MCI, AD]</code></p>
+            
+            <ul style="font-family:monospace;font-size:0.9rem;line-height:1.8;padding-left:1.2rem;color:#334155;margin:0">
+              <li><strong>XGBoost:</strong> [0.29, 0.47, 0.23] → Predicts <strong style="color:#d97706">MCI</strong></li>
+              <li><strong>TabNet:</strong>  [0.36, 0.27, 0.35] → Predicts <strong style="color:#166534">CN</strong> (barely)</li>
+              <li><strong>NODE:</strong>    [0.48, 0.40, 0.11] → Predicts <strong style="color:#166534">CN</strong></li>
+            </ul>
+            
+            <div style="margin-top:1rem;padding:0.75rem;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;color:#166534;font-weight:600;text-align:center">
+              True Majority: 2 votes for CN, 1 vote for MCI
+            </div>
+          </div>
+
+          <!-- Right: The LLM Failure -->
+          <div class="card" style="border-top:4px solid #ef4444">
+            <h3 style="margin:0 0 0.5rem 0;color:#0f172a">LLM's Flawed Reasoning</h3>
+            <p class="muted" style="font-size:0.85rem;margin-bottom:1rem">The model fails to correctly tally the votes and hallucinates a majority.</p>
+            
+            <div style="background:#fef2f2;border:1px solid #fecaca;padding:1rem;border-radius:8px;font-size:0.85rem;color:#991b1b;line-height:1.6;font-style:italic">
+              "The XGBoost model indicates the highest probability for MCI stage. The TabNet model is somewhat ambiguous but leans slightly towards AD. The NODE model indicates the highest probability for CN stage.<br/><br/>
+              <strong>Considering these results, the overall highest probability category from the majority of models is MCI.</strong><br/><br/>
+              Final diagnosis: MCI"
+            </div>
+            
+            <div style="margin-top:1rem;padding:0.75rem;background:#fff1f2;border-radius:8px;border:1px solid #fecaca;color:#b91c1c;font-weight:600;text-align:center">
+              Result: Incorrect Final Diagnosis (MCI instead of CN)
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 11: Run other baselines -->
     <section class="slide">
       <h2>Other Baselines</h2>
       <h1>Run other baselines</h1>
@@ -301,7 +498,7 @@
   </div>
 
   <div class="nav">
-    <div class="counter" id="slide-counter">1 / 7</div>
+    <div class="counter" id="slide-counter">1 / 11</div>
     <button class="btn" onclick="prevSlide()">Previous</button>
     <button class="btn" onclick="nextSlide()">Next</button>
   </div>
