@@ -24,6 +24,10 @@
     pre.code{background:#0b1220;color:#e6f6ff;padding:1rem;border-radius:8px;overflow:auto;font-family:JetBrains Mono,monospace;font-size:0.9rem}
     .prompt-snippet{background:#0b1220;color:#e2e8f0;padding:0.65rem 0.75rem;border-radius:8px;overflow:auto;font-family:JetBrains Mono,ui-monospace,monospace;font-size:0.68rem;line-height:1.45;max-height:min(280px,32vh);margin:0.4rem 0 0 0;white-space:pre-wrap}
     .llm-output-snippet{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d;padding:0.65rem 0.75rem;border-radius:8px;overflow:auto;font-family:JetBrains Mono,ui-monospace,monospace;font-size:0.65rem;line-height:1.45;max-height:min(280px,32vh);margin:0.4rem 0 0 0;white-space:pre-wrap}
+    section.slide.slide-cot{flex-direction:column;min-height:0;overflow:hidden}
+    section.slide.slide-cot .cot-grid{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;align-items:stretch;margin-top:0.45rem}
+    section.slide.slide-cot .cot-col{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+    section.slide.slide-cot pre.cot-pre{flex:1;min-height:0;max-height:none!important;margin-top:0.35rem;overflow-y:auto;font-size:0.62rem;line-height:1.42}
     table{width:100%;border-collapse:collapse;margin-top:.5rem}
     th,td{padding:.5rem 0.6rem;text-align:left;border-bottom:1px solid #f1f5f9}
     th{color:var(--muted);font-weight:700}
@@ -46,7 +50,7 @@
         <div class="accent-bar" style="height:8px;margin-top:6px;margin-bottom:6px"></div>
         <div style="margin-top:1rem;display:flex;gap:1.25rem;font-weight:600;color:var(--muted)">
           <div>Date: March 18, 2026</div>
-          <div>Preview: ADAgent baseline for ADNI</div>
+          <div>Preview: Baselines for ADNI</div>
         </div>
       </div>
     </section>
@@ -56,15 +60,13 @@
       <h2>Baseline</h2>
       <h1>Vanilla zero-shot LLM</h1>
       <div class="accent-bar"></div>
-      <p class="muted" style="margin-top:0.35rem;max-width:1100px">One LLM call with no tools or agent graph: instructions plus all tabular PET SUVRs, MRI regional volumes, and demographics are concatenated into <strong>one prompt string</strong> (implementation may still map slices to API roles internally). Model: <strong>GPT-4o mini</strong>. Test <strong>accuracy 0.3007</strong>, <strong>macro F1 0.2549</strong>.</p>
+      <p class="muted" style="margin-top:0.35rem;max-width:1100px">One LLM call with no tools or agent graph: instructions plus all tabular PET SUVRs, MRI regional volumes, and demographics are concatenated into <strong>one prompt string</strong> (implementation may still map slices to API roles internally). Model: <strong>GPT-4o mini</strong>. Test <strong>accuracy 0.3007</strong>, <strong>F1 0.2549</strong>.</p>
       <div style="margin-top:0.55rem;display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;flex:1;min-height:0;align-items:stretch">
         <div class="card" style="padding:0.75rem;display:flex;flex-direction:column;min-height:0">
           <strong style="color:#0f172a">Example prompt (abridged)</strong>
           <pre class="prompt-snippet" style="max-height:min(300px,36vh);margin-top:0.35rem">You are an expert in multi-modal assessment for Alzheimer's disease and related cognitive decline. You integrate amyloid PET (SUVR), structural MRI volumetrics, and demographic context to reason about cognitive stage. Cognitive stages are: CN (cognitively normal), MCI (mild cognitive impairment), and AD (Alzheimer's dementia).
 
 Task: Diagnose cognitive status for patient 2c2b87ca69d76b46
-
-Expert opinions:
 
 PET Amyloid (SUVR):
   BRAINSTEM SUVR: 1.271
@@ -107,10 +109,79 @@ The diagnosis is: MCI</pre>
           <div class="muted" style="font-size:0.72rem;margin-top:0.3rem;line-height:1.3">Free-form reasoning; final line matches the requested format for parsing.</div>
         </div>
       </div>
-      <div class="muted" style="margin-top:0.4rem;font-size:0.82rem">Dry-run: <code>python single_LLM/zero_shot.py --dry-run</code></div>
+      <div class="muted" style="margin-top:0.4rem;font-size:0.82rem"></div>
     </section>
 
-    <!-- Slide 3: ADAgent Overview -->
+    <!-- Slide 3: Chain-of-thought (CoT) -->
+    <section class="slide slide-cot">
+      <h2>Baseline</h2>
+      <h1>Chain-of-thought (CoT)</h1>
+      <div class="accent-bar"></div>
+      <p class="muted" style="margin-top:0.25rem;max-width:1100px;font-size:0.92rem;line-height:1.35">Same tabular inputs as zero-shot, plus <strong>explicit section headings</strong> for reasoning (PET → MRI → demographics → integration) and a <strong>single parseable final line</strong>. One prompt string to the model.· <strong>GPT-4o mini</strong>. Test <strong>accuracy 0.2941</strong>, <strong>F1 0.2599</strong>.</p>
+      <div class="cot-grid">
+        <div class="card cot-col" style="padding:0.65rem 0.75rem">
+          <strong style="color:#0f172a;font-size:0.95rem">Example prompt</strong>
+          <pre class="prompt-snippet cot-pre">You are an expert in multi-modal assessment for Alzheimer's disease and related cognitive decline. The user message requires structured chain-of-thought under fixed section headings, then exactly one final line with the diagnosis. Follow their headings and the final-line format exactly. Stages: CN (cognitively normal), MCI (mild cognitive impairment), AD (Alzheimer's dementia).
+
+Task: Diagnose cognitive status for patient 2c2b87ca69d76b46
+
+Expert opinions:
+
+PET Amyloid (SUVR):
+  BRAINSTEM SUVR: 1.271
+  …  [full regional SUVR tables]
+
+MRI Structural Volumes:
+  BRAINSTEM VOLUME: 19617.0
+  …  [full regional volume tables]
+
+Demographics:
+  Age at visit (years): 69.50
+  Gender: Female
+  …
+
+Based on the patient data above, provide your final diagnosis as one of: CN, MCI, or AD.
+Format: 'The diagnosis is: [CN/MCI/AD]'
+---
+How to answer (required structure):
+
+1) Write chain-of-thought under these Markdown headings:
+### 1. PET amyloid (SUVR)
+Interpret regional SUVR patterns and what they suggest about amyloid-related burden relative to typical CN vs neurodegenerative patterns.
+
+### 2. MRI structural volumes
+Interpret atrophy or preservation (e.g., medial temporal, ventricular, cortical) and how that aligns with CN vs MCI vs AD.
+
+### 3. Demographics
+Briefly contextualize age, education, sex, and other given fields (do not invent facts not in the data).
+
+### 4. Integration
+Weigh PET, MRI, and demographics together and argue which single stage (CN, MCI, or AD) is best supported.
+
+2) After those sections, output exactly one final line with no other text on that line:
+The diagnosis is: [CN/MCI/AD]</pre>
+        </div>
+        <div class="card cot-col" style="padding:0.65rem 0.75rem">
+          <strong style="color:#0f172a;font-size:0.95rem">Example model output</strong>
+          <pre class="llm-output-snippet cot-pre">### 1. PET amyloid (SUVR)
+The PET amyloid results show elevated SUVR values in several regions, particularly in the brainstem (1.397) and various areas of the cerebral cortex, including the cingulate and frontal lobe. These values suggest a significant amyloid burden, which is typically associated with neurodegenerative processes such as Alzheimer's disease (AD). In contrast, cognitively normal (CN) individuals usually exhibit lower SUVR values across these regions.
+
+### 2. MRI structural volumes
+The MRI structural volumes indicate some degree of atrophy, particularly in the frontal lobe and temporal lobe regions, which are critical for memory and cognitive function. The ventricular volumes are also notably enlarged, which is often indicative of neurodegeneration. In CN individuals, we would expect to see preserved volumes in these areas, while MCI and AD patients typically show some level of atrophy.
+
+### 3. Demographics
+The patient is a 78-year-old female with 18 years of education. This demographic information is relevant as older age is a significant risk factor for cognitive decline, and higher education levels can sometimes provide a protective effect against dementia. However, the combination of age and the observed neuroimaging findings suggests a higher likelihood of cognitive impairment.
+
+### 4. Integration
+Considering the elevated amyloid burden indicated by the PET scan, the structural atrophy observed in the MRI, and the patient's age and educational background, the evidence strongly supports a diagnosis of Alzheimer's disease (AD). The combination of these factors points towards a neurodegenerative process rather than a state of mild cognitive impairment (MCI) or cognitive normality (CN).
+
+The diagnosis is: AD</pre>
+          <div class="muted" style="font-size:0.7rem;margin-top:0.25rem;line-height:1.25;flex-shrink:0">Headings match the template; last line is parsed as the prediction.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: ADAgent Overview -->
     <section class="slide">
       <h2>ADAgent</h2>
       <h1>Collaborative Multi-Modal Diagnostic Agent</h1>
@@ -142,7 +213,7 @@ The diagnosis is: MCI</pre>
 
     <!-- (Validation & Test slide removed here; re-inserted after Tabular Baseline Adaptation) -->
 
-    <!-- Slide 4: Diagnosis Results (paper) -->
+    <!-- Slide 5: Diagnosis Results (paper) -->
     <section class="slide">
       <h2>Published Results</h2>
       <h1>Diagnosis & Prognosis (ADNI)</h1>
@@ -185,7 +256,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 5: Adapting ADAgent for Tabular Baselines -->
+    <!-- Slide 6: Adapting ADAgent for Tabular Baselines -->
     <section class="slide">
       <h2>Tabular Baseline Adaptation</h2>
       <h1>Turning ADAgent into a Baseline for Tabular Datasets</h1>
@@ -219,7 +290,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 6: ADAgent Tabular Workflow -->
+    <!-- Slide 7: ADAgent Tabular Workflow -->
     <section class="slide">
       <h2>ADAgent in Action</h2>
       <h1>LangGraph & LangChain Coordinator</h1>
@@ -311,7 +382,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 7: Prompts & Workflow Details -->
+    <!-- Slide 8: Prompts & Workflow Details -->
     <section class="slide">
       <h2>Under the Hood</h2>
       <h1>Prompts & Tool Execution Workflow</h1>
@@ -371,7 +442,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 8: Validation & Test Results (Tabular Baselines - All modalities) -->
+    <!-- Slide 9: Validation & Test Results (Tabular Baselines - All modalities) -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (All modalities - PET, MRI, Demographics)</h1>
@@ -416,7 +487,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 9: Validation & Test — MRI only -->
+    <!-- Slide 10: Validation & Test — MRI only -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (MRI only)</h1>
@@ -460,7 +531,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 10: Validation & Test — PET only -->
+    <!-- Slide 11: Validation & Test — PET only -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (PET only)</h1>
@@ -504,7 +575,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 11: Error Analysis -->
+    <!-- Slide 12: Error Analysis -->
     <section class="slide">
       <h2>Error Analysis</h2>
       <h1>Why did GPT-4-1-mini underperform?</h1>
@@ -550,7 +621,7 @@ The diagnosis is: MCI</pre>
       </div>
     </section>
 
-    <!-- Slide 12: Run other baselines -->
+    <!-- Slide 13: Run other baselines -->
     <section class="slide">
       <h2>Other Baselines</h2>
       <h1>Run other baselines</h1>
@@ -566,7 +637,7 @@ The diagnosis is: MCI</pre>
   </div>
 
   <div class="nav">
-    <div class="counter" id="slide-counter">1 / 12</div>
+    <div class="counter" id="slide-counter">1 / 13</div>
     <button class="btn" onclick="prevSlide()">Previous</button>
     <button class="btn" onclick="nextSlide()">Next</button>
   </div>
