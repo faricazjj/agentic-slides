@@ -22,6 +22,8 @@
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center}
     .card{background:#fbffff;border:1px solid #eef6fb;border-radius:10px;padding:1rem}
     pre.code{background:#0b1220;color:#e6f6ff;padding:1rem;border-radius:8px;overflow:auto;font-family:JetBrains Mono,monospace;font-size:0.9rem}
+    .prompt-snippet{background:#0b1220;color:#e2e8f0;padding:0.65rem 0.75rem;border-radius:8px;overflow:auto;font-family:JetBrains Mono,ui-monospace,monospace;font-size:0.68rem;line-height:1.45;max-height:min(280px,32vh);margin:0.4rem 0 0 0;white-space:pre-wrap}
+    .llm-output-snippet{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d;padding:0.65rem 0.75rem;border-radius:8px;overflow:auto;font-family:JetBrains Mono,ui-monospace,monospace;font-size:0.65rem;line-height:1.45;max-height:min(280px,32vh);margin:0.4rem 0 0 0;white-space:pre-wrap}
     table{width:100%;border-collapse:collapse;margin-top:.5rem}
     th,td{padding:.5rem 0.6rem;text-align:left;border-bottom:1px solid #f1f5f9}
     th{color:var(--muted);font-weight:700}
@@ -49,7 +51,66 @@
       </div>
     </section>
 
-    <!-- Slide 2: ADAgent Overview -->
+    <!-- Slide 2: Vanilla zero-shot baseline -->
+    <section class="slide">
+      <h2>Baseline</h2>
+      <h1>Vanilla zero-shot LLM</h1>
+      <div class="accent-bar"></div>
+      <p class="muted" style="margin-top:0.35rem;max-width:1100px">One LLM call with no tools or agent graph: instructions plus all tabular PET SUVRs, MRI regional volumes, and demographics are concatenated into <strong>one prompt string</strong> (implementation may still map slices to API roles internally). Model: <strong>GPT-4o mini</strong>. Test <strong>accuracy 0.3007</strong>, <strong>macro F1 0.2549</strong>.</p>
+      <div style="margin-top:0.55rem;display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;flex:1;min-height:0;align-items:stretch">
+        <div class="card" style="padding:0.75rem;display:flex;flex-direction:column;min-height:0">
+          <strong style="color:#0f172a">Example prompt (abridged)</strong>
+          <pre class="prompt-snippet" style="max-height:min(300px,36vh);margin-top:0.35rem">You are an expert in multi-modal assessment for Alzheimer's disease and related cognitive decline. You integrate amyloid PET (SUVR), structural MRI volumetrics, and demographic context to reason about cognitive stage. Cognitive stages are: CN (cognitively normal), MCI (mild cognitive impairment), and AD (Alzheimer's dementia).
+
+Task: Diagnose cognitive status for patient 2c2b87ca69d76b46
+
+Expert opinions:
+
+PET Amyloid (SUVR):
+  BRAINSTEM SUVR: 1.271
+  …  [full SUVR atlas follows]
+
+MRI Structural Volumes:
+  BRAINSTEM VOLUME: 19617.0
+  …  [full volume atlas follows]
+
+Demographics:
+  Age at visit (years): 69.50
+  …  [gender, education, ethnicity, race]
+
+Based on the patient data above, provide your final diagnosis as one of: CN, MCI, or AD.
+Format: 'The diagnosis is: [CN/MCI/AD]'</pre>
+          <div class="muted" style="font-size:0.72rem;margin-top:0.3rem;line-height:1.3">Production prompts include every regional line from the input table.</div>
+        </div>
+        <div class="card" style="padding:0.75rem;display:flex;flex-direction:column;min-height:0">
+          <strong style="color:#0f172a">Example model output (same patient, GPT-4o mini)</strong>
+          <pre class="llm-output-snippet" style="max-height:min(300px,36vh);margin-top:0.35rem">To diagnose the cognitive status of the patient based on the provided data, we will analyze the amyloid PET SUVR values, structural MRI volumetrics, and demographic context.
+
+1. **Amyloid PET SUVR Analysis**:
+   - The patient's SUVR values are generally elevated, particularly in regions associated with Alzheimer's pathology (e.g., frontal lobe, cingulate, and temporal lobe).
+   - Notably, the entorhinal cortex SUVR is 0.948, which is below the typical threshold for amyloid positivity, but many other regions show significant elevations (e.g., frontal lobe SUVRs around 1.3-1.5).
+   - The overall pattern suggests a significant amyloid burden, which is often associated with Alzheimer's disease.
+
+2. **MRI Structural Volumetrics**:
+   - The volumes of critical regions such as the hippocampus (7255.0) and entorhinal cortex (5463.0) are important. While the hippocampal volume is somewhat preserved, the entorhinal cortex volume is on the lower side, which can indicate early neurodegeneration.
+   - The overall brain structure appears to show some atrophy, particularly in areas typically affected by Alzheimer's disease.
+
+3. **Demographics**:
+   - The patient is a 69.5-year-old female with 20 years of education. Higher education levels can sometimes correlate with better cognitive reserve, potentially masking early cognitive decline.
+
+4. **Cognitive Stage**:
+   - Given the elevated amyloid burden and the structural changes observed, the patient likely falls into the category of Mild Cognitive Impairment (MCI) rather than being cognitively normal (CN) or having full-blown Alzheimer's dementia (AD). The presence of amyloid pathology combined with some structural changes suggests that the patient is experiencing cognitive decline that is not yet severe enough to meet the criteria for Alzheimer's dementia.
+
+Based on this analysis, the final diagnosis is:
+
+The diagnosis is: MCI</pre>
+          <div class="muted" style="font-size:0.72rem;margin-top:0.3rem;line-height:1.3">Free-form reasoning; final line matches the requested format for parsing.</div>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:0.4rem;font-size:0.82rem">Dry-run: <code>python single_LLM/zero_shot.py --dry-run</code></div>
+    </section>
+
+    <!-- Slide 3: ADAgent Overview -->
     <section class="slide">
       <h2>ADAgent</h2>
       <h1>Collaborative Multi-Modal Diagnostic Agent</h1>
@@ -81,7 +142,7 @@
 
     <!-- (Validation & Test slide removed here; re-inserted after Tabular Baseline Adaptation) -->
 
-    <!-- Slide 3: Diagnosis Results (paper) -->
+    <!-- Slide 4: Diagnosis Results (paper) -->
     <section class="slide">
       <h2>Published Results</h2>
       <h1>Diagnosis & Prognosis (ADNI)</h1>
@@ -124,7 +185,7 @@
       </div>
     </section>
 
-    <!-- Slide 4: Adapting ADAgent for Tabular Baselines -->
+    <!-- Slide 5: Adapting ADAgent for Tabular Baselines -->
     <section class="slide">
       <h2>Tabular Baseline Adaptation</h2>
       <h1>Turning ADAgent into a Baseline for Tabular Datasets</h1>
@@ -158,7 +219,7 @@
       </div>
     </section>
 
-    <!-- Slide 5: ADAgent Tabular Workflow -->
+    <!-- Slide 6: ADAgent Tabular Workflow -->
     <section class="slide">
       <h2>ADAgent in Action</h2>
       <h1>LangGraph & LangChain Coordinator</h1>
@@ -250,7 +311,7 @@
       </div>
     </section>
 
-    <!-- Slide 6: Prompts & Workflow Details -->
+    <!-- Slide 7: Prompts & Workflow Details -->
     <section class="slide">
       <h2>Under the Hood</h2>
       <h1>Prompts & Tool Execution Workflow</h1>
@@ -310,7 +371,7 @@
       </div>
     </section>
 
-    <!-- Slide 7: Validation & Test Results (Tabular Baselines - All modalities) -->
+    <!-- Slide 8: Validation & Test Results (Tabular Baselines - All modalities) -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (All modalities - PET, MRI, Demographics)</h1>
@@ -346,14 +407,16 @@
               <tr><td>TabPFN</td><td>0.6565±0.0266</td><td>0.6564±0.0231</td></tr>
               <tr><td>NODE</td><td>0.6461±0.0350</td><td>0.6467±0.0318</td></tr>
               <tr><td>TabM</td><td>0.6078±0.0239</td><td>0.6083±0.0107</td></tr>
-              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent</td><td>—</td><td>—</td></tr>
+              <tr style="background:#f1f5f9;font-weight:600;border-top:2px solid #cbd5e1"><td>Mean (5 tabular SOTAs)</td><td>0.6282±0.0245</td><td>0.6251±0.0281</td></tr>
+              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent (gpt-4-1-mini)</td><td>0.6435±0.0215</td><td>0.6404±0.0199</td></tr>
             </tbody>
           </table>
+          <div class="muted" style="font-size:0.78rem;margin-top:0.4rem;line-height:1.35;max-width:100%">Mean (5 tabular SOTAs): average of test ACC/F1 means for FT-Transformer, TabNet, TabPFN, NODE, and TabM (XGBoost excluded as baseline); ± is the standard deviation across those five method-level means (spread between models, not seed uncertainty).</div>
         </div>
       </div>
     </section>
 
-    <!-- Slide 6: Validation & Test — MRI only -->
+    <!-- Slide 9: Validation & Test — MRI only -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (MRI only)</h1>
@@ -388,14 +451,16 @@
               <tr><td>TabPFN</td><td>0.6174±0.0177</td><td>0.6085±0.0183</td></tr>
               <tr><td>NODE</td><td>0.5991±0.0263</td><td>0.5913±0.0280</td></tr>
               <tr><td>TabM</td><td>0.5974±0.0338</td><td>0.5985±0.0296</td></tr>
-              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent (gpt-4-1-mini)</td><td>0.4904±0.0155</td><td>0.4054±0.0235</td></tr>
+              <tr style="background:#f1f5f9;font-weight:600;border-top:2px solid #cbd5e1"><td>Mean (5 tabular SOTAs)</td><td>0.5911±0.0386</td><td>0.5821±0.0440</td></tr>
+              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent (gpt-4-1-mini)</td><td>0.6061±0.0156</td><td>0.6070±0.0157</td></tr>
             </tbody>
           </table>
+          <div class="muted" style="font-size:0.78rem;margin-top:0.4rem;line-height:1.35;max-width:100%">Mean (5 tabular SOTAs): average of test ACC/F1 means for FT-Transformer, TabNet, TabPFN, NODE, and TabM (XGBoost excluded as baseline); ± is the standard deviation across those five method-level means (spread between models, not seed uncertainty).</div>
         </div>
       </div>
     </section>
 
-    <!-- Slide 7: Validation & Test — PET only -->
+    <!-- Slide 10: Validation & Test — PET only -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (PET only)</h1>
@@ -430,14 +495,16 @@
               <tr><td>TabPFN</td><td>0.6304±0.0277</td><td>0.6219±0.0258</td></tr>
               <tr><td>NODE</td><td>0.5948±0.0332</td><td>0.5889±0.0315</td></tr>
               <tr><td>TabM</td><td>0.6183±0.0229</td><td>0.6236±0.0175</td></tr>
-              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent (gpt-4-1-mini)</td><td>0.4991±0.0167</td><td>0.4122±0.0174</td></tr>
+              <tr style="background:#f1f5f9;font-weight:600;border-top:2px solid #cbd5e1"><td>Mean (5 tabular SOTAs)</td><td>0.6019±0.0363</td><td>0.5936±0.0436</td></tr>
+              <tr style="background:#f0f9ff;font-weight:700"><td>ADAgent (gpt-4-1-mini)</td><td>0.6226±0.0313</td><td>0.6178±0.0369</td></tr>
             </tbody>
           </table>
+          <div class="muted" style="font-size:0.78rem;margin-top:0.4rem;line-height:1.35;max-width:100%">Mean (5 tabular SOTAs): average of test ACC/F1 means for FT-Transformer, TabNet, TabPFN, NODE, and TabM (XGBoost excluded as baseline); ± is the standard deviation across those five method-level means (spread between models, not seed uncertainty).</div>
         </div>
       </div>
     </section>
 
-    <!-- Slide 10: Error Analysis -->
+    <!-- Slide 11: Error Analysis -->
     <section class="slide">
       <h2>Error Analysis</h2>
       <h1>Why did GPT-4-1-mini underperform?</h1>
@@ -483,7 +550,7 @@
       </div>
     </section>
 
-    <!-- Slide 11: Run other baselines -->
+    <!-- Slide 12: Run other baselines -->
     <section class="slide">
       <h2>Other Baselines</h2>
       <h1>Run other baselines</h1>
@@ -499,7 +566,7 @@
   </div>
 
   <div class="nav">
-    <div class="counter" id="slide-counter">1 / 11</div>
+    <div class="counter" id="slide-counter">1 / 12</div>
     <button class="btn" onclick="prevSlide()">Previous</button>
     <button class="btn" onclick="nextSlide()">Next</button>
   </div>
