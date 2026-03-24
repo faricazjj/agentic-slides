@@ -49,7 +49,7 @@
         <h1 style="font-size:3rem;line-height:1">Agentic baselines</h1>
         <div class="accent-bar" style="height:8px;margin-top:6px;margin-bottom:6px"></div>
         <div style="margin-top:1rem;display:flex;gap:1.25rem;font-weight:600;color:var(--muted)">
-          <div>Date: March 18, 2026</div>
+          <div>Date: March 25, 2026</div>
           <div>Preview: Baselines for ADNI</div>
         </div>
       </div>
@@ -117,7 +117,7 @@ The diagnosis is: MCI</pre>
       <h2>Baseline</h2>
       <h1>Chain-of-thought (CoT)</h1>
       <div class="accent-bar"></div>
-      <p class="muted" style="margin-top:0.25rem;max-width:1100px;font-size:0.92rem;line-height:1.35">Same tabular inputs as zero-shot, plus <strong>explicit section headings</strong> for reasoning (PET → MRI → demographics → integration) and a <strong>single parseable final line</strong>. One prompt string to the model.· <strong>GPT-4o mini</strong>. Test <strong>accuracy 0.2941</strong>, <strong>F1 0.2599</strong>.</p>
+      <p class="muted" style="margin-top:0.25rem;max-width:1100px;font-size:0.92rem;line-height:1.35">Same tabular inputs as zero-shot, plus <strong>explicit section headings</strong> for reasoning (PET → MRI → demographics → integration) and a <strong>single parseable final line</strong>. One prompt string to the model. <code style="font-size:0.9em">single_LLM/cot.py</code> · <strong>GPT-4o mini</strong>. Test <strong>accuracy 0.2941</strong>, <strong>F1 0.2599</strong>.</p>
       <div class="cot-grid">
         <div class="card cot-col" style="padding:0.65rem 0.75rem">
           <strong style="color:#0f172a;font-size:0.95rem">Example prompt</strong>
@@ -181,7 +181,65 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 4: ADAgent Overview -->
+    <!-- Slide 4: Few-shot -->
+    <section class="slide slide-cot">
+      <h2>Baseline</h2>
+      <h1>Few-shot</h1>
+      <div class="accent-bar"></div>
+      <p class="muted" style="margin-top:0.25rem;max-width:1100px;font-size:0.92rem;line-height:1.35">Labeled demos share the same tabular layout as the query patient; each ends with <code>The diagnosis is: …</code>, then one <strong>new patient without a label</strong>. We report <strong>3-shot</strong> (1 per class), <strong>9-shot</strong> (3 per class), and <strong>15-shot</strong> (5 per class). <strong>GPT-4o mini</strong></p>
+      <div class="cot-grid" style="grid-template-columns:1.35fr 0.85fr">
+        <div class="card cot-col" style="padding:0.65rem 0.75rem">
+          <strong style="color:#0f172a;font-size:0.95rem">Example prompt</strong>
+          <pre class="prompt-snippet cot-pre">
+You are an expert in multi-modal assessment for Alzheimer's disease and related cognitive decline. The user message first shows one or more example patients with the same data layout and their gold-standard diagnosis (CN, MCI, or AD), then a new patient without a label. Diagnose only the new patient using the same reasoning style as for the examples. Output format for your answer: a single line exactly: The diagnosis is: CN or MCI or AD.
+
+The following are example patients with multimodal data and their correct cognitive stage (CN, MCI, or AD).
+Use them as reference for how data patterns relate to the label.
+
+— Example 1 (CN) —
+PETAmyloid (SUVR):
+Brainstem:
+  BRAINSTEM SUVR: 1.271
+
+Cerebellum:
+  CEREBELLUM CORTEX SUVR: 0.901
+  CEREBELLUM WHITE MATTER SUVR: 1.346
+
+Cerebral Cortex:
+  CEREBRAL WHITE MATTER SUVR: 1.687
+
+Cingulate:
+  CTX CAUDALANTERIORCINGULATE SUVR: 1.458
+  CTX ISTHMUSCINGULATE SUVR: 1.389
+MRI …
+Demographics …
+The diagnosis is: CN
+
+— Examples 2–8 —
+…
+The diagnosis is: MCI   (or AD, etc.)
+
+Based on the patient data above, provide your final diagnosis as one of: CN, MCI, or AD.
+Format: 'The diagnosis is: [CN/MCI/AD]'
+</pre>
+        </div>
+        <div class="card cot-col" style="padding:0.75rem;display:flex;flex-direction:column;justify-content:flex-start;gap:0.5rem;background:#f8fafc;border-color:#e2e8f0">
+          <strong style="color:#0f172a;font-size:1rem">Test results</strong>
+          <table style="margin-top:0.25rem;font-size:0.88rem;width:100%">
+            <thead>
+              <tr><th style="padding:0.3rem 0.4rem 0.3rem 0;text-align:left;border-bottom:1px solid #cbd5e1">Setting</th><th style="padding:0.3rem 0.4rem;text-align:right;border-bottom:1px solid #cbd5e1">Accuracy</th><th style="padding:0.3rem 0;text-align:right;border-bottom:1px solid #cbd5e1">F1</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:0.35rem 0.4rem 0.35rem 0;border-bottom:1px solid #e2e8f0">3-shot <span class="muted" style="font-size:0.8em">(1/class)</span></td><td style="padding:0.35rem 0.4rem;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700">0.3824</td><td style="padding:0.35rem 0;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700">0.3231</td></tr>
+              <tr><td style="padding:0.35rem 0.4rem 0.35rem 0;border-bottom:1px solid #e2e8f0">9-shot <span class="muted" style="font-size:0.8em">(3/class)</span></td><td style="padding:0.35rem 0.4rem;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700">0.3399</td><td style="padding:0.35rem 0;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700">0.2859</td></tr>
+              <tr><td style="padding:0.35rem 0.4rem 0.35rem 0">15-shot <span class="muted" style="font-size:0.8em">(5/class)</span></td><td style="padding:0.35rem 0.4rem;text-align:right;font-weight:700">0.3399</td><td style="padding:0.35rem 0;text-align:right;font-weight:700">0.2863</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: ADAgent Overview -->
     <section class="slide">
       <h2>ADAgent</h2>
       <h1>Collaborative Multi-Modal Diagnostic Agent</h1>
@@ -213,7 +271,7 @@ The diagnosis is: AD</pre>
 
     <!-- (Validation & Test slide removed here; re-inserted after Tabular Baseline Adaptation) -->
 
-    <!-- Slide 5: Diagnosis Results (paper) -->
+    <!-- Slide 6: Diagnosis Results (paper) -->
     <section class="slide">
       <h2>Published Results</h2>
       <h1>Diagnosis & Prognosis (ADNI)</h1>
@@ -256,7 +314,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 6: Adapting ADAgent for Tabular Baselines -->
+    <!-- Slide 7: Adapting ADAgent for Tabular Baselines -->
     <section class="slide">
       <h2>Tabular Baseline Adaptation</h2>
       <h1>Turning ADAgent into a Baseline for Tabular Datasets</h1>
@@ -290,7 +348,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 7: ADAgent Tabular Workflow -->
+    <!-- Slide 8: ADAgent Tabular Workflow -->
     <section class="slide">
       <h2>ADAgent in Action</h2>
       <h1>LangGraph & LangChain Coordinator</h1>
@@ -382,7 +440,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 8: Prompts & Workflow Details -->
+    <!-- Slide 9: Prompts & Workflow Details -->
     <section class="slide">
       <h2>Under the Hood</h2>
       <h1>Prompts & Tool Execution Workflow</h1>
@@ -442,7 +500,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 9: Validation & Test Results (Tabular Baselines - All modalities) -->
+    <!-- Slide 10: Validation & Test Results (Tabular Baselines - All modalities) -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (All modalities - PET, MRI, Demographics)</h1>
@@ -487,7 +545,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 10: Validation & Test — MRI only -->
+    <!-- Slide 11: Validation & Test — MRI only -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (MRI only)</h1>
@@ -531,7 +589,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 11: Validation & Test — PET only -->
+    <!-- Slide 12: Validation & Test — PET only -->
     <section class="slide">
       <h2>Validation & Test</h2>
       <h1>Tabular Baselines — ACC & F1 (PET only)</h1>
@@ -575,7 +633,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 12: Error Analysis -->
+    <!-- Slide 13: Error Analysis -->
     <section class="slide">
       <h2>Error Analysis</h2>
       <h1>Why did GPT-4-1-mini underperform?</h1>
@@ -621,7 +679,7 @@ The diagnosis is: AD</pre>
       </div>
     </section>
 
-    <!-- Slide 13: Run other baselines -->
+    <!-- Slide 14: Run other baselines -->
     <section class="slide">
       <h2>Other Baselines</h2>
       <h1>Run other baselines</h1>
@@ -637,7 +695,7 @@ The diagnosis is: AD</pre>
   </div>
 
   <div class="nav">
-    <div class="counter" id="slide-counter">1 / 13</div>
+    <div class="counter" id="slide-counter">1 / 14</div>
     <button class="btn" onclick="prevSlide()">Previous</button>
     <button class="btn" onclick="nextSlide()">Next</button>
   </div>
